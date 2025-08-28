@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/shared/auth/useAuth";
 import { useDeals } from "@/features/deals/api";
+import { calcPnL, calcTotal } from "@/features/deals/lib/calculations";
+import { useAppStore, type StoreState } from "@/shared/store/appStore";
 
 import { Button } from "@/shared/ui/button";
 import {
@@ -44,17 +46,7 @@ function monthLabel(value: string) {
   return d.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
 }
 
-/* ========= итог и прибыль ========= */
-// итог = сумма с учётом комиссии (фактически получено/потрачено)
-function calcTotal(type: "buy" | "sell", amount: number, commission: number) {
-  const fee = (amount * (commission || 0)) / 100;
-  return type === "sell" ? amount - fee : amount + fee;
-}
-// прибыль = только разница от комиссии (PnL)
-function calcPnL(type: "buy" | "sell", amount: number, commission: number) {
-  const pnl = (amount * (commission || 0)) / 100;
-  return type === "sell" ? +pnl : -pnl;
-}
+/* ========= бизнес-логика вынесена в features/deals/lib/calculations.ts ========= */
 
 /* ========= MonthPicker (shadcn popover + кнопка) ========= */
 function MonthPicker({
@@ -164,6 +156,14 @@ function DealsTableByMonth({
   compact?: boolean;
 }) {
   const dealsQ = useDeals(month, userId);
+  const setDealsForMonth = useAppStore((s: StoreState) => s.setDealsForMonth);
+
+  // Синхронизация данных Supabase → глобальный стор (по месяцам)
+  useEffect(() => {
+    if (dealsQ.data) {
+      setDealsForMonth(month, dealsQ.data);
+    }
+  }, [dealsQ.data, setDealsForMonth, month]);
 
   return (
     <div className="overflow-x-auto w-full border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30">

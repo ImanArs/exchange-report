@@ -20,6 +20,8 @@ import NewTransactionForm from "@/features/new-transaction/ui/NewTransactionForm
 import { useAuth } from "@/shared/auth/useAuth";
 import LoginPage from "@/features/auth/LoginPage";
 import { Header } from "./widgets/header";
+import { useAppStore, type StoreState } from "@/shared/store/appStore";
+import { useEffect } from "react";
 
 const qc = new QueryClient({
   queryCache: new QueryCache({
@@ -52,6 +54,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 // ⟵ LAYOUT ВНУТРИ ROUTER (Header теперь в контексте Router)
 // eslint-disable-next-line react-refresh/only-export-components
 function RootLayout() {
+  // keep layout UI untouched, but sync auth → global store
+  const setUser = useAppStore((s: StoreState) => s.setUser);
+  const { userId, email } = useAuth();
+  useEffect(() => {
+    setUser(userId ? { id: userId, email } : null);
+  }, [setUser, userId, email]);
   return (
     <>
       <Header />
