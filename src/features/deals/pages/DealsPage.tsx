@@ -61,11 +61,15 @@ function monthLabel(value: string) {
 function MonthPicker({
   value,
   onChange,
+  active = true,
+  placeholder = "Выберите месяц",
 }: {
-  value: string;
+  value: string | null;
   onChange: (v: string) => void;
+  active?: boolean;
+  placeholder?: string;
 }) {
-  const selected = parseMonthStr(value);
+  const selected = value ? parseMonthStr(value) : new Date();
   const [open, setOpen] = useState(false);
   const [year, setYear] = useState(selected.getFullYear());
 
@@ -84,17 +88,21 @@ function MonthPicker({
     "Дек",
   ];
 
+  const buttonLabel = value ? monthLabel(value) : placeholder;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           type="button"
           variant="secondary"
-          className="w-[220px] rounded-[12px] justify-between bg-[#434377] text-white hover:bg-[#6161D6] transition-colors"
+          className={[
+            "w-[220px] rounded-[12px] justify-between text-white transition-colors",
+            active ? "bg-[#434377] hover:bg-[#6161D6]" : "bg-[#434377]/60",
+          ].join(" ")}
         >
           <span className="inline-flex items-center gap-2">
             <CalendarDays className="w-4 h-4" />
-            {monthLabel(value)}
+            {buttonLabel}
           </span>
           <ChevronRight className="w-4 h-4 opacity-70" />
         </Button>
@@ -127,7 +135,7 @@ function MonthPicker({
 
         <div className="grid grid-cols-3 gap-2">
           {months.map((m, idx) => {
-            const isActive =
+            const isActive = Boolean(value) &&
               year === selected.getFullYear() && idx === selected.getMonth();
             return (
               <Button
@@ -192,7 +200,7 @@ function DealsTableByMonth({
     <div className="overflow-x-auto w-full border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30">
       {!compact && (
         <div className="flex justify-center mb-2">
-          <p className="text-sm text-white">Сделки за {month}</p>
+          <p className="text-sm text-white">Сделки за {monthLabel(month).replace(' г.', '')}</p>
         </div>
       )}
 
@@ -213,6 +221,7 @@ function DealsTableByMonth({
             <TableHead className="px-2 py-2 text-right">
               Сумма продажи
             </TableHead>
+            <TableHead className="px-2 py-2 text-right">прибыль</TableHead>
             <TableHead className="px-2 py-2 text-right">действия</TableHead>
           </TableRow>
         </TableHeader>
@@ -240,6 +249,17 @@ function DealsTableByMonth({
                 <TableCell className="px-2 py-2 text-right">
                   {d.sell_amount}
                 </TableCell>
+                {(() => {
+                  const profit = (Number(d.sell_amount) || 0) - (Number(d.buy_amount) || 0);
+                  return (
+                    <TableCell
+                      className={`px-2 py-2 text-right ${profit > 0 ? 'text-green-500' : ''} ${profit < 0 ? 'text-red-500' : ''}`}
+                    >
+                      {profit > 0 ? '+' : ''}
+                      {profit.toFixed(2)}
+                    </TableCell>
+                  );
+                })()}
                 <TableCell className="px-2 py-2 text-right">
                   <div className="inline-flex items-center gap-2">
                     <Button
@@ -280,7 +300,7 @@ function DealsTableByMonth({
           {(dealsQ.data?.length ?? 0) === 0 && (
             <TableRow className="text-white border-b/60 hover:bg-[#6161D6]/10 transition-colors">
               <TableCell colSpan={8} className="px-2 py-8 text-center">
-                Нет данных за {month}
+                Нет данных за {monthLabel(month).replace(' г.', '')}
               </TableCell>
             </TableRow>
           )}
@@ -454,13 +474,13 @@ export default function DealsPage() {
   const { userId, loading } = useAuth();
 
   const [preset, setPreset] = useState<Preset>("1m");
-  const [customMonth, setCustomMonth] = useState<string>(() => fmtMonth());
+  const [customMonth, setCustomMonth] = useState<string | null>(null);
 
   const monthsToRender = useMemo(() => {
     if (preset === "1m") return [fmtMonth()];
     if (preset === "3m") return prevMonths(3);
     if (preset === "6m") return prevMonths(6);
-    return [customMonth];
+    return customMonth ? [customMonth] : [];
   }, [preset, customMonth]);
 
   if (!loading && !userId) return <Navigate to="/login" replace />;
@@ -474,7 +494,7 @@ export default function DealsPage() {
             type="button"
             variant="secondary"
             aria-pressed={preset === "1m"}
-            onClick={() => setPreset("1m")}
+            onClick={() => { setPreset("1m"); setCustomMonth(null); }}
             className={[
               "rounded-full text-white bg-[#434377]",
               "hover:bg-[#6161D6] transition-colors",
@@ -487,7 +507,7 @@ export default function DealsPage() {
             type="button"
             variant="secondary"
             aria-pressed={preset === "3m"}
-            onClick={() => setPreset("3m")}
+            onClick={() => { setPreset("3m"); setCustomMonth(null); }}
             className={[
               "rounded-full text-white bg-[#434377]",
               "hover:bg-[#6161D6] transition-colors",
@@ -500,7 +520,7 @@ export default function DealsPage() {
             type="button"
             variant="secondary"
             aria-pressed={preset === "6m"}
-            onClick={() => setPreset("6m")}
+            onClick={() => { setPreset("6m"); setCustomMonth(null); }}
             className={[
               "rounded-full text-white bg-[#434377]",
               "hover:bg-[#6161D6] transition-colors",
@@ -514,6 +534,8 @@ export default function DealsPage() {
         {/* кастомный месяц — кнопка с popup (не input) */}
         <MonthPicker
           value={customMonth}
+          active={preset === "custom"}
+          placeholder="Выберите месяц"
           onChange={(v) => {
             setCustomMonth(v);
             setPreset("custom");
