@@ -9,6 +9,8 @@ import { cn } from "@/shared/lib/utils";
 type Mode = "login" | "register" | "forgot" | "reset";
 
 export default function LoginPage() {
+  const SITE_URL =
+    (import.meta as any)?.env?.VITE_PUBLIC_SITE_URL || window.location.origin;
   const [mode, setMode] = useState<Mode>("login");
 
   // login
@@ -31,7 +33,7 @@ export default function LoginPage() {
 
   // роуты
   const redirectAfterLogin = useMemo(() => "#/deals", []);
-  const redirectTo = useMemo(() => `${window.location.origin}/#/login`, []);
+  const redirectTo = useMemo(() => `${SITE_URL}/#/login`, [SITE_URL]);
 
   // единый эффект: обмениваем ?code= на сессию и показываем экран reset
   useEffect(() => {
@@ -99,6 +101,7 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signUp({
         email: regEmail,
         password: regPassword,
+        options: { emailRedirectTo: redirectTo },
       });
       if (error) throw error;
       if (data.user)
