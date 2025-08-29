@@ -41,13 +41,27 @@ export const Header = () => {
   // daily aggregation not used in current header
 
   // Примерная метрика: прибыль как (sell_amount - buy_amount)
-  const stats = useAppStore((s: StoreState) => s.monthly[currentMonth]);
-  const monthPnl = Number(stats?.pnl || 0);
+  // Переходим на прибыль за СЕГОДНЯ
+  function isToday(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  }
+  const todayPnl = (dealsQ.data ?? []).reduce((acc, d) => {
+    if (!isToday(d.deal_date)) return acc;
+    const buy = Number(d.buy_amount) || 0;
+    const sell = Number(d.sell_amount) || 0;
+    return acc + (sell - buy);
+  }, 0);
 
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-white px-4 sm:px-6 md:px-10 py-3 sm:py-4 border-b border-border">
-      {/* Left side: Logo + nav */}
-      <div className="w-full max-w-[400px] sm:max-w-[300px] flex items-center gap-3 sm:gap-6 md:gap-8 flex-wrap">
+      {/* Left side: nav (hidden on mobile) */}
+      <div className="hidden sm:block w-full max-w-[400px] sm:max-w-[300px] items-center gap-3 sm:gap-6 md:gap-8 flex-wrap">
         <nav className="w-full">
           <ul className="flex flex-wrap justify-between items-center gap-2 sm:gap-4 md:gap-6 text-xs sm:text-sm font-medium">
             {navLinks.map((link) => (
@@ -68,16 +82,13 @@ export const Header = () => {
       <div className="flex items-center justify-between gap-3 sm:gap-5 md:gap-6 w-full sm:w-auto">
         <div className="text-right flex-1 sm:flex-none">
           <div
-            className={`text-sm font-medium ${
-              monthPnl >= 0 ? "text-green-500" : "text-red-500"
+            className={`text-xs text-left lg:text-right lg:text-sm font-medium ${
+              todayPnl >= 0 ? "text-green-500" : "text-red-500"
             }`}
           >
-            {monthPnl >= 0 ? "+" : ""}
-            {monthPnl.toFixed(2)}$ Прибыль за месяц
+            {todayPnl >= 0 ? "+" : ""}
+            {todayPnl.toFixed(2)}$ Прибыль за сегодня
           </div>
-          <p className="hidden sm:block text-lg font-semibold">
-            {monthPnl.toFixed(2)}$ Прибыль за месяц
-          </p>
         </div>
 
         <div className="flex items-center gap-2 rounded-lg bg-[#6161D6] px-2.5 sm:px-3 py-1">
@@ -134,7 +145,7 @@ export const Header = () => {
                   await supabase.auth.signOut();
                   toast.success("Вы вышли из системы");
                   setLogoutOpen(false);
-                  window.location.href = "/login";
+                  window.location.hash = "#/login";
                 } catch (e: any) {
                   toast.error(e?.message ?? "Ошибка выхода");
                 }

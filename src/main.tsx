@@ -3,10 +3,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import {
-  createBrowserRouter,
-  RouterProvider,
+  HashRouter,
+  Routes,
+  Route,
   Navigate,
-  Outlet, // ⟵ ДОБАВЬ
+  Outlet,
+  useLocation,
 } from "react-router-dom";
 import {
   QueryClient,
@@ -20,6 +22,7 @@ import NewTransactionForm from "@/features/new-transaction/ui/NewTransactionForm
 import { useAuth } from "@/shared/auth/useAuth";
 import LoginPage from "@/features/auth/LoginPage";
 import { Header } from "./widgets/header";
+import { BottomNavigation } from "./widgets/BottomNavigation";
 import { useAppStore, type StoreState } from "@/shared/store/appStore";
 import { useEffect } from "react";
 
@@ -28,7 +31,7 @@ const qc = new QueryClient({
     onError: (error) => {
       const e = error as any;
       if (e?.status === 401 || /jwt|auth/i.test(String(e?.message ?? ""))) {
-        if (location.pathname !== "/login") location.href = "/login";
+        if (location.hash !== "#/login") window.location.hash = "#/login";
       }
     },
   }),
@@ -36,7 +39,7 @@ const qc = new QueryClient({
     onError: (error) => {
       const e = error as any;
       if (e?.status === 401 || /jwt|auth/i.test(String(e?.message ?? ""))) {
-        if (location.pathname !== "/login") location.href = "/login";
+        if (location.hash !== "#/login") window.location.hash = "#/login";
       }
     },
   }),
@@ -57,51 +60,52 @@ function RootLayout() {
   // keep layout UI untouched, but sync auth → global store
   const setUser = useAppStore((s: StoreState) => s.setUser);
   const { userId, email } = useAuth();
+  const location = useLocation();
+  const hideHeader = location.pathname === "/login";
   useEffect(() => {
     setUser(userId ? { id: userId, email } : null);
   }, [setUser, userId, email]);
   return (
     <>
-      <Header />
+      {!hideHeader && <Header />}
       <div className="min-h-screen w-full">
         <Toaster richColors position="top-right" />
-        <div className="max-w-[700px] flex flex-col pt-10 items-center justify-center w-full mx-auto">
+        <div className="p-2 max-w-[700px] flex flex-col pt-10 pb-20 sm:pb-0 items-center justify-center w-full mx-auto">
           <Outlet />
         </div>
       </div>
+      {!hideHeader && <BottomNavigation />}
     </>
   );
 }
 
-const router = createBrowserRouter([
-  {
-    element: <RootLayout />,
-    children: [
-      {
-        path: "/",
-        element: (
-          <RequireAuth>
-            <NewTransactionForm />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: "/deals",
-        element: (
-          <RequireAuth>
-            <DealsPage />
-          </RequireAuth>
-        ),
-      },
-      { path: "/login", element: <LoginPage /> },
-    ],
-  },
-]);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
-      <RouterProvider router={router} />
+      <HashRouter>
+        <Routes>
+          <Route element={<RootLayout />}>
+            <Route
+              index
+              element={
+                <RequireAuth>
+                  <NewTransactionForm />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="deals"
+              element={
+                <RequireAuth>
+                  <DealsPage />
+                </RequireAuth>
+              }
+            />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </HashRouter>
     </QueryClientProvider>
   </StrictMode>
 );

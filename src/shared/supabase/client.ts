@@ -5,8 +5,9 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
+    flowType: "pkce", // нужно для exchangeCodeForSession
     autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
   },
 });
-

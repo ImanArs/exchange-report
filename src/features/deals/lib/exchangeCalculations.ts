@@ -1,7 +1,7 @@
 export function computeBuyTotal(usdt: number, buyCommission: number) {
   const base = Number(usdt) || 0;
   const c = Number(buyCommission) || 0;
-  return base - (base * c) / 100;
+  return base + (base * c) / 100;
 }
 
 export function computeSellTotal(usdt: number, sellCommission: number) {
@@ -32,5 +32,5 @@ export function aggregateMonthNew<T extends DealLike>(deals: T[]) {
 export function clampPercent(n: number) {
   const x = Number(n);
   if (!isFinite(x)) return 0;
-  return Math.min(100, Math.max(0, x));
+  return Math.min(100, Math.max(-100, x));
 }

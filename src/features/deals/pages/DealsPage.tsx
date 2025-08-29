@@ -18,6 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCaption,
 } from "@/shared/ui/table";
 import {
   Popover,
@@ -135,8 +136,10 @@ function MonthPicker({
 
         <div className="grid grid-cols-3 gap-2">
           {months.map((m, idx) => {
-            const isActive = Boolean(value) &&
-              year === selected.getFullYear() && idx === selected.getMonth();
+            const isActive =
+              Boolean(value) &&
+              year === selected.getFullYear() &&
+              idx === selected.getMonth();
             return (
               <Button
                 key={m}
@@ -200,7 +203,9 @@ function DealsTableByMonth({
     <div className="overflow-x-auto w-full border border-[#BEBEBE]/30 rounded-[20px] px-3 sm:px-5 py-3 sm:py-4 bg-[#434377]/30">
       {!compact && (
         <div className="flex justify-center mb-2">
-          <p className="text-sm text-white">Сделки за {monthLabel(month).replace(' г.', '')}</p>
+          <p className="text-sm text-white">
+            Сделки за {monthLabel(month).replace(" г.", "")}
+          </p>
         </div>
       )}
 
@@ -209,18 +214,10 @@ function DealsTableByMonth({
           <TableRow className="text-white bg-transparent hover:bg-transparent">
             <TableHead className="px-2 py-2">Дата транзакции</TableHead>
             <TableHead className="px-2 py-2 text-right">USDT</TableHead>
-            <TableHead className="px-2 py-2 text-right">
-              Комиссия покупки (%)
-            </TableHead>
-            <TableHead className="px-2 py-2 text-right">
-              Сумма покупки
-            </TableHead>
-            <TableHead className="px-2 py-2 text-right">
-              Комиссия продажи (%)
-            </TableHead>
-            <TableHead className="px-2 py-2 text-right">
-              Сумма продажи
-            </TableHead>
+            <TableHead className="px-2 py-2 text-right">Покупка (%)</TableHead>
+            <TableHead className="px-2 py-2 text-right">покупка($)</TableHead>
+            <TableHead className="px-2 py-2 text-right">Продажа (%)</TableHead>
+            <TableHead className="px-2 py-2 text-right">Продажа($)</TableHead>
             <TableHead className="px-2 py-2 text-right">прибыль</TableHead>
             <TableHead className="px-2 py-2 text-right">действия</TableHead>
           </TableRow>
@@ -250,12 +247,15 @@ function DealsTableByMonth({
                   {d.sell_amount}
                 </TableCell>
                 {(() => {
-                  const profit = (Number(d.sell_amount) || 0) - (Number(d.buy_amount) || 0);
+                  const profit =
+                    (Number(d.sell_amount) || 0) - (Number(d.buy_amount) || 0);
                   return (
                     <TableCell
-                      className={`px-2 py-2 text-right ${profit > 0 ? 'text-green-500' : ''} ${profit < 0 ? 'text-red-500' : ''}`}
+                      className={`px-2 py-2 text-right ${
+                        profit > 0 ? "text-green-500" : ""
+                      } ${profit < 0 ? "text-red-500" : ""}`}
                     >
-                      {profit > 0 ? '+' : ''}
+                      {profit > 0 ? "+" : ""}
                       {profit.toFixed(2)}
                     </TableCell>
                   );
@@ -297,14 +297,13 @@ function DealsTableByMonth({
             );
           })}
 
-          {(dealsQ.data?.length ?? 0) === 0 && (
-            <TableRow className="text-white border-b/60 hover:bg-[#6161D6]/10 transition-colors">
-              <TableCell colSpan={8} className="px-2 py-8 text-center">
-                Нет данных за {monthLabel(month).replace(' г.', '')}
-              </TableCell>
-            </TableRow>
-          )}
+          {(dealsQ.data?.length ?? 0) === 0 && null}
         </TableBody>
+        {(dealsQ.data?.length ?? 0) === 0 && (
+          <TableCaption className="text-center text-white/90">
+            Нет данных за {monthLabel(month).replace(" г.", "")}
+          </TableCaption>
+        )}
       </Table>
 
       {/* Edit modal */}
@@ -365,14 +364,14 @@ function DealsTableByMonth({
               <Input
                 id="buy_commission"
                 type="number"
-                min="0"
+                min="-100"
                 max="100"
                 step="0.1"
                 value={form.buy_commission}
                 onChange={(e) => {
                   let v = Number(e.target.value);
                   if (!isFinite(v)) v = 0;
-                  if (v < 0) v = 0;
+                  if (v < -100) v = -100;
                   if (v > 100) v = 100;
                   setForm({ ...form, buy_commission: v });
                 }}
@@ -396,14 +395,14 @@ function DealsTableByMonth({
               <Input
                 id="sell_commission"
                 type="number"
-                min="0"
+                min="-100"
                 max="100"
                 step="0.1"
                 value={form.sell_commission}
                 onChange={(e) => {
                   let v = Number(e.target.value);
                   if (!isFinite(v)) v = 0;
-                  if (v < 0) v = 0;
+                  if (v < -100) v = -100;
                   if (v > 100) v = 100;
                   setForm({ ...form, sell_commission: v });
                 }}
@@ -490,45 +489,54 @@ export default function DealsPage() {
       {/* Filters */}
       <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:justify-between border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30">
         <div className="inline-flex gap-2 text-white">
-        <Button
-          type="button"
-          variant="secondary"
-          aria-pressed={preset === "1m"}
-          onClick={() => { setPreset("1m"); setCustomMonth(null); }}
-          className={[
+          <Button
+            type="button"
+            variant="secondary"
+            aria-pressed={preset === "1m"}
+            onClick={() => {
+              setPreset("1m");
+              setCustomMonth(null);
+            }}
+            className={[
               "rounded-full text-white bg-[#434377]",
               "hover:bg-[#6161D6] transition-colors",
               preset === "1m" ? "bg-[#6161D6]" : "",
             ].join(" ")}
-        >
-          Этот месяц
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          aria-pressed={preset === "3m"}
-          onClick={() => { setPreset("3m"); setCustomMonth(null); }}
-          className={[
-            "rounded-full text-white bg-[#434377]",
-            "hover:bg-[#6161D6] transition-colors",
-            preset === "3m" ? "bg-[#6161D6]" : "",
-          ].join(" ")}
-        >
-          3 мес
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          aria-pressed={preset === "6m"}
-          onClick={() => { setPreset("6m"); setCustomMonth(null); }}
-          className={[
-            "rounded-full text-white bg-[#434377]",
-            "hover:bg-[#6161D6] transition-colors",
-            preset === "6m" ? "bg-[#6161D6]" : "",
-          ].join(" ")}
-        >
-          6 мес
-        </Button>
+          >
+            Этот месяц
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-pressed={preset === "3m"}
+            onClick={() => {
+              setPreset("3m");
+              setCustomMonth(null);
+            }}
+            className={[
+              "rounded-full text-white bg-[#434377]",
+              "hover:bg-[#6161D6] transition-colors",
+              preset === "3m" ? "bg-[#6161D6]" : "",
+            ].join(" ")}
+          >
+            3 мес
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            aria-pressed={preset === "6m"}
+            onClick={() => {
+              setPreset("6m");
+              setCustomMonth(null);
+            }}
+            className={[
+              "rounded-full text-white bg-[#434377]",
+              "hover:bg-[#6161D6] transition-colors",
+              preset === "6m" ? "bg-[#6161D6]" : "",
+            ].join(" ")}
+          >
+            6 мес
+          </Button>
         </div>
 
         {/* кастомный месяц — кнопка с popup (не input) */}

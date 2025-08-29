@@ -38,13 +38,14 @@ export function NewTransactionForm() {
     watch,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       usdt: undefined as unknown as number,
-      buyCommission: 0,
-      sellCommission: 0,
+      buyCommission: undefined as unknown as number,
+      sellCommission: undefined as unknown as number,
     },
     mode: "onBlur",
   });
@@ -64,7 +65,7 @@ export function NewTransactionForm() {
       const { data: auth } = await supabase.auth.getUser();
       const userId = auth.user?.id;
       if (!userId) {
-        window.location.href = "/login";
+        window.location.hash = "#/login";
         return;
       }
 
@@ -89,7 +90,11 @@ export function NewTransactionForm() {
         } as any);
 
         toast.success("Запись сохранена");
-        reset({ usdt: undefined as unknown as number, buyCommission: 0, sellCommission: 0 });
+        reset({
+          usdt: undefined as unknown as number,
+          buyCommission: 0,
+          sellCommission: 0,
+        });
       } catch (e: any) {
         toast.error(e?.message ?? "Ошибка сохранения");
       }
@@ -124,6 +129,15 @@ export function NewTransactionForm() {
             type="number"
             step="0.1"
             placeholder="Например, 0.75"
+            onFocus={(e) => {
+              if (e.currentTarget.value !== "") {
+                e.currentTarget.value = "";
+                setValue("buyCommission", NaN as unknown as number, {
+                  shouldDirty: true,
+                  shouldValidate: false,
+                });
+              }
+            }}
             {...register("buyCommission", { valueAsNumber: true })}
           />
           {errors.buyCommission && (
@@ -132,13 +146,13 @@ export function NewTransactionForm() {
             </p>
           )}
           <Label htmlFor="buyTotal" className="text-xs">
-            Сумма покупки (итог, USDT)
+            Сумма покупки ($ USD)
           </Label>
           <Input
             id="buyTotal"
             type="number"
             readOnly
-            value={usdt > 0 ? buyTotal.toFixed(4) : ""}
+            value={usdt > 0 ? buyTotal.toFixed(3) : ""}
           />
         </div>
 
@@ -149,6 +163,15 @@ export function NewTransactionForm() {
             type="number"
             step="0.1"
             placeholder="Например, 0.75"
+            onFocus={(e) => {
+              if (e.currentTarget.value !== "") {
+                e.currentTarget.value = "";
+                setValue("sellCommission", NaN as unknown as number, {
+                  shouldDirty: true,
+                  shouldValidate: false,
+                });
+              }
+            }}
             {...register("sellCommission", { valueAsNumber: true })}
           />
           {errors.sellCommission && (
@@ -157,13 +180,13 @@ export function NewTransactionForm() {
             </p>
           )}
           <Label htmlFor="sellTotal" className="text-xs">
-            Сумма продажи (итог, USDT)
+            Сумма продажи ($ USD)
           </Label>
           <Input
             id="sellTotal"
             type="number"
             readOnly
-            value={usdt > 0 ? sellTotal.toFixed(4) : ""}
+            value={usdt > 0 ? sellTotal.toFixed(3) : ""}
           />
         </div>
 
