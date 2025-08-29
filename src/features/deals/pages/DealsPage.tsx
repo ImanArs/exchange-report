@@ -1,8 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/shared/auth/useAuth";
-import { useDeals } from "@/features/deals/api";
-import { calcPnL, calcTotal } from "@/features/deals/lib/calculations";
+import {
+  useDeals,
+  useDeleteDeal,
+  useUpdateDeal,
+  type DealRow,
+} from "@/features/deals/api";
 import { useAppStore, type StoreState } from "@/shared/store/appStore";
 
 import { Button } from "@/shared/ui/button";
@@ -20,7 +25,11 @@ import {
   PopoverContent,
 } from "@/shared/components/ui/popover";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
+import { Pencil, Trash2 } from "lucide-react";
+import { Modal } from "@/shared/ui/modal";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { toast } from "sonner";
 
 /* ========= utils ========= */
 function fmtMonth(d = new Date()) {
@@ -157,6 +166,20 @@ function DealsTableByMonth({
 }) {
   const dealsQ = useDeals(month, userId);
   const setDealsForMonth = useAppStore((s: StoreState) => s.setDealsForMonth);
+  const updateM = useUpdateDeal();
+  const deleteM = useDeleteDeal();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [form, setForm] = useState<{
+    id: string;
+    usdt: number;
+    buy_commission: number;
+    buy_amount: number;
+    sell_commission: number;
+    sell_amount: number;
+  } | null>(null);
+  const [toDelete, setToDelete] = useState<DealRow | null>(null);
 
   // Синхронизация данных Supabase → глобальный стор (по месяцам)
   useEffect(() => {
@@ -173,28 +196,29 @@ function DealsTableByMonth({
         </div>
       )}
 
-      <Table>
+      <Table className="min-w-[820px]">
         <TableHeader className="hover:bg-transparent">
           <TableRow className="text-white bg-transparent hover:bg-transparent">
             <TableHead className="px-2 py-2">Дата транзакции</TableHead>
-            <TableHead className="px-2 py-2">тип</TableHead>
-            <TableHead className="px-2 py-2 text-right">usdt</TableHead>
-            <TableHead className="px-2 py-2 text-right">сумма</TableHead>
+            <TableHead className="px-2 py-2 text-right">USDT</TableHead>
             <TableHead className="px-2 py-2 text-right">
-              commission (%)
+              Комиссия покупки (%)
             </TableHead>
-            <TableHead className="px-2 py-2 text-right">итог</TableHead>
-            <TableHead className="px-2 py-2 text-right">прибыль</TableHead>
+            <TableHead className="px-2 py-2 text-right">
+              Сумма покупки
+            </TableHead>
+            <TableHead className="px-2 py-2 text-right">
+              Комиссия продажи (%)
+            </TableHead>
+            <TableHead className="px-2 py-2 text-right">
+              Сумма продажи
+            </TableHead>
+            <TableHead className="px-2 py-2 text-right">действия</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
           {(dealsQ.data ?? []).map((d) => {
-            const amount = Number(d.amount) || 0;
-            const commission = Number(d.commission) || 0;
-            const total = calcTotal(d.type, amount, commission);
-            const pnl = calcPnL(d.type, amount, commission);
-
             return (
               <TableRow
                 key={d.id}
@@ -203,31 +227,51 @@ function DealsTableByMonth({
                 <TableCell className="px-2 py-2">
                   {new Date(d.deal_date).toLocaleString()}
                 </TableCell>
-
-                <TableCell className="px-2 py-2">
-                  {d.type === "buy" ? "Покупка" : "Продажа"}
-                </TableCell>
-
                 <TableCell className="px-2 py-2 text-right">{d.usdt}</TableCell>
                 <TableCell className="px-2 py-2 text-right">
-                  {d.amount}
+                  {d.buy_commission}
                 </TableCell>
                 <TableCell className="px-2 py-2 text-right">
-                  {d.commission}
+                  {d.buy_amount}
                 </TableCell>
-
-                <TableCell className={cn("px-2 py-2 text-right")}>
-                  {total.toFixed(2)}
+                <TableCell className="px-2 py-2 text-right">
+                  {d.sell_commission}
                 </TableCell>
-
-                <TableCell
-                  className={cn("px-2 py-2 text-right", {
-                    "text-green-500": pnl > 0,
-                    "text-red-500": pnl < 0,
-                  })}
-                >
-                  {pnl > 0 ? "+" : ""}
-                  {pnl.toFixed(2)}
+                <TableCell className="px-2 py-2 text-right">
+                  {d.sell_amount}
+                </TableCell>
+                <TableCell className="px-2 py-2 text-right">
+                  <div className="inline-flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full hover:bg-[#6161D6]/20"
+                      onClick={() => {
+                        setForm({
+                          id: d.id,
+                          usdt: Number(d.usdt) || 0,
+                          buy_commission: Number(d.buy_commission) || 0,
+                          buy_amount: Number(d.buy_amount) || 0,
+                          sell_commission: Number(d.sell_commission) || 0,
+                          sell_amount: Number(d.sell_amount) || 0,
+                        });
+                        setEditOpen(true);
+                      }}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full hover:bg-[#6161D6]/20"
+                      onClick={() => {
+                        setToDelete(d);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -235,13 +279,171 @@ function DealsTableByMonth({
 
           {(dealsQ.data?.length ?? 0) === 0 && (
             <TableRow className="text-white border-b/60 hover:bg-[#6161D6]/10 transition-colors">
-              <TableCell colSpan={7} className="px-2 py-8 text-center">
+              <TableCell colSpan={8} className="px-2 py-8 text-center">
                 Нет данных за {month}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {/* Edit modal */}
+      <Modal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Изменить сделку"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setEditOpen(false)}
+              className="rounded-full bg-[#434377] hover:bg-[#6161D6]"
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!form) return;
+                try {
+                  await updateM.mutateAsync({
+                    id: form.id,
+                    usdt: form.usdt,
+                    buy_commission: form.buy_commission,
+                    buy_amount: form.buy_amount,
+                    sell_commission: form.sell_commission,
+                    sell_amount: form.sell_amount,
+                  });
+                  toast.success("Сделка обновлена");
+                  setEditOpen(false);
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Ошибка обновления");
+                }
+              }}
+              className="rounded-full bg-[#6161D6] hover:bg-[#6161D6]/90"
+            >
+              Сохранить
+            </Button>
+          </>
+        }
+      >
+        {form && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="usdt">USDT</Label>
+              <Input
+                id="usdt"
+                type="number"
+                value={form.usdt}
+                onChange={(e) =>
+                  setForm({ ...form, usdt: Number(e.target.value) })
+                }
+                className="text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="buy_commission">Комиссия покупки (%)</Label>
+              <Input
+                id="buy_commission"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={form.buy_commission}
+                onChange={(e) => {
+                  let v = Number(e.target.value);
+                  if (!isFinite(v)) v = 0;
+                  if (v < 0) v = 0;
+                  if (v > 100) v = 100;
+                  setForm({ ...form, buy_commission: v });
+                }}
+                className="text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="buy_amount">Сумма покупки</Label>
+              <Input
+                id="buy_amount"
+                type="number"
+                value={form.buy_amount}
+                onChange={(e) =>
+                  setForm({ ...form, buy_amount: Number(e.target.value) })
+                }
+                className="text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sell_commission">Комиссия продажи (%)</Label>
+              <Input
+                id="sell_commission"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={form.sell_commission}
+                onChange={(e) => {
+                  let v = Number(e.target.value);
+                  if (!isFinite(v)) v = 0;
+                  if (v < 0) v = 0;
+                  if (v > 100) v = 100;
+                  setForm({ ...form, sell_commission: v });
+                }}
+                className="text-white"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sell_amount">Сумма продажи</Label>
+              <Input
+                id="sell_amount"
+                type="number"
+                value={form.sell_amount}
+                onChange={(e) =>
+                  setForm({ ...form, sell_amount: Number(e.target.value) })
+                }
+                className="text-white"
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete modal */}
+      <Modal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Удалить сделку"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setDeleteOpen(false)}
+              className="rounded-full bg-[#434377] hover:bg-[#6161D6]"
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!toDelete) return;
+                try {
+                  await deleteM.mutateAsync(toDelete.id);
+                  toast.success("Сделка удалена");
+                  setDeleteOpen(false);
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Ошибка удаления");
+                }
+              }}
+              className="rounded-full"
+            >
+              Удалить
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm opacity-90">
+          Вы уверены, что хотите удалить сделку от{" "}
+          {toDelete ? new Date(toDelete.deal_date).toLocaleString() : ""}?
+        </p>
+      </Modal>
     </div>
   );
 }

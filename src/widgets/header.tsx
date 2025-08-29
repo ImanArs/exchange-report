@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button } from "@/shared/ui/button";
 import { MoreVertical, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/shared/auth/useAuth";
 import { useDeals } from "@/features/deals/api";
-import { calcPnL } from "@/features/deals/lib/calculations";
 import { useAppStore, type StoreState } from "@/shared/store/appStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Modal } from "@/shared/ui/modal";
+import { supabase } from "@/shared/supabase/client";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +23,7 @@ const navLinks = [
 
 export const Header = () => {
   const { userId, email } = useAuth();
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   function fmtMonth(d = new Date()) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -34,29 +38,11 @@ export const Header = () => {
     if (dealsQ.data) setDealsForMonth(currentMonth, dealsQ.data);
   }, [dealsQ.data, currentMonth, setDealsForMonth]);
 
-  const today = new Date();
-  const isSameDay = (iso: string) => {
-    const d = new Date(iso);
-    return (
-      d.getFullYear() === today.getFullYear() &&
-      d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate()
-    );
-  };
+  // daily aggregation not used in current header
 
-  const monthProfit = (dealsQ.data ?? []).reduce((acc, d) => {
-    const amount = Number(d.amount) || 0;
-    const commission = Number(d.commission) || 0;
-    return acc + calcPnL(d.type, amount, commission);
-  }, 0);
-
-  const todayProfit = (dealsQ.data ?? [])
-    .filter((d) => isSameDay(d.deal_date))
-    .reduce((acc, d) => {
-      const amount = Number(d.amount) || 0;
-      const commission = Number(d.commission) || 0;
-      return acc + calcPnL(d.type, amount, commission);
-    }, 0);
+  // Примерная метрика: прибыль как (sell_amount - buy_amount)
+  const stats = useAppStore((s: StoreState) => s.monthly[currentMonth]);
+  const monthPnl = Number(stats?.pnl || 0);
 
   return (
     <header className="flex items-center justify-between text-white px-10 py-4 border-b border-border">
@@ -78,11 +64,16 @@ export const Header = () => {
       {/* Right side: stats + user */}
       <div className="flex items-center gap-6">
         <div className="text-right">
-          <div className={`text-sm font-medium ${todayProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {todayProfit >= 0 ? '+' : ''}{todayProfit.toFixed(2)}$ за сегодня
+          <div
+            className={`text-sm font-medium ${
+              monthPnl >= 0 ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {monthPnl >= 0 ? "+" : ""}
+            {monthPnl.toFixed(2)}$ Прибыль за месяц
           </div>
           <p className="text-lg font-semibold">
-            {monthProfit.toFixed(2)}$ за месяц
+            {monthPnl.toFixed(2)}$ Прибыль за месяц
           </p>
         </div>
 
@@ -101,14 +92,56 @@ export const Header = () => {
                 <MoreVertical className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => console.log("logout")}>
+            <DropdownMenuContent
+              align="end"
+              className="w-40 bg-[#434377] text-white border border-[#BEBEBE]/30"
+            >
+              <DropdownMenuItem
+                onClick={() => setLogoutOpen(true)}
+                className="cursor-pointer rounded-md hover:bg-[#6161D6] focus:bg-[#6161D6]"
+              >
                 Выйти
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Logout confirm modal */}
+      <Modal
+        open={logoutOpen}
+        onClose={() => setLogoutOpen(false)}
+        title="Выйти из аккаунта?"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setLogoutOpen(false)}
+              className="rounded-full bg-[#434377] hover:bg-[#6161D6]"
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-full"
+              onClick={async () => {
+                try {
+                  await supabase.auth.signOut();
+                  toast.success("Вы вышли из системы");
+                  setLogoutOpen(false);
+                  window.location.href = "/login";
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Ошибка выхода");
+                }
+              }}
+            >
+              Выйти
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm opacity-90">Вы действительно хотите выйти?</p>
+      </Modal>
     </header>
   );
 };
