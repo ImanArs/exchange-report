@@ -45,14 +45,17 @@ export const Header = () => {
   const monthPnl = Number(stats?.pnl || 0);
 
   return (
-    <header className="flex items-center justify-between text-white px-10 py-4 border-b border-border">
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-white px-4 sm:px-6 md:px-10 py-3 sm:py-4 border-b border-border">
       {/* Left side: Logo + nav */}
-      <div className="flex items-center gap-8">
-        <nav>
-          <ul className="flex items-center gap-6 text-sm font-medium">
+      <div className="w-full max-w-[400px] sm:max-w-[300px] flex items-center gap-3 sm:gap-6 md:gap-8 flex-wrap">
+        <nav className="w-full">
+          <ul className="flex flex-wrap justify-between items-center gap-2 sm:gap-4 md:gap-6 text-xs sm:text-sm font-medium">
             {navLinks.map((link) => (
               <li key={link.href}>
-                <Link to={link.href} className="transition-colors">
+                <Link
+                  to={link.href}
+                  className="transition-colors text-[20px] sm:text-lg"
+                >
                   {link.label}
                 </Link>
               </li>
@@ -62,8 +65,8 @@ export const Header = () => {
       </div>
 
       {/* Right side: stats + user */}
-      <div className="flex items-center gap-6">
-        <div className="text-right">
+      <div className="flex items-center justify-between gap-3 sm:gap-5 md:gap-6 w-full sm:w-auto">
+        <div className="text-right flex-1 sm:flex-none">
           <div
             className={`text-sm font-medium ${
               monthPnl >= 0 ? "text-green-500" : "text-red-500"
@@ -72,16 +75,18 @@ export const Header = () => {
             {monthPnl >= 0 ? "+" : ""}
             {monthPnl.toFixed(2)}$ Прибыль за месяц
           </div>
-          <p className="text-lg font-semibold">
+          <p className="hidden sm:block text-lg font-semibold">
             {monthPnl.toFixed(2)}$ Прибыль за месяц
           </p>
         </div>
 
-        <div className="flex items-center gap-2 rounded-lg bg-[#6161D6] px-3 py-1">
+        <div className="flex items-center gap-2 rounded-lg bg-[#6161D6] px-2.5 sm:px-3 py-1">
           <div>
             <User className="w-6 h-6 rounded-full" />
           </div>
-          <p className="text-sm">{email ?? "—"}</p>
+          <p className="text-xs sm:text-sm max-w-[140px] truncate">
+            {email ?? "—"}
+          </p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

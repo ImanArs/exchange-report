@@ -197,14 +197,14 @@ function DealsTableByMonth({
   }, [dealsQ.data, setDealsForMonth, month]);
 
   return (
-    <div className="overflow-x-auto w-full border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30">
+    <div className="overflow-x-auto w-full border border-[#BEBEBE]/30 rounded-[20px] px-3 sm:px-5 py-3 sm:py-4 bg-[#434377]/30">
       {!compact && (
         <div className="flex justify-center mb-2">
           <p className="text-sm text-white">Сделки за {monthLabel(month).replace(' г.', '')}</p>
         </div>
       )}
 
-      <Table className="min-w-[820px]">
+      <Table className="min-w-[900px] sm:min-w-[820px]">
         <TableHeader className="hover:bg-transparent">
           <TableRow className="text-white bg-transparent hover:bg-transparent">
             <TableHead className="px-2 py-2">Дата транзакции</TableHead>
@@ -490,45 +490,45 @@ export default function DealsPage() {
       {/* Filters */}
       <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:justify-between border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30">
         <div className="inline-flex gap-2 text-white">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-pressed={preset === "1m"}
-            onClick={() => { setPreset("1m"); setCustomMonth(null); }}
-            className={[
+        <Button
+          type="button"
+          variant="secondary"
+          aria-pressed={preset === "1m"}
+          onClick={() => { setPreset("1m"); setCustomMonth(null); }}
+          className={[
               "rounded-full text-white bg-[#434377]",
               "hover:bg-[#6161D6] transition-colors",
               preset === "1m" ? "bg-[#6161D6]" : "",
             ].join(" ")}
-          >
-            Этот месяц
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-pressed={preset === "3m"}
-            onClick={() => { setPreset("3m"); setCustomMonth(null); }}
-            className={[
-              "rounded-full text-white bg-[#434377]",
-              "hover:bg-[#6161D6] transition-colors",
-              preset === "3m" ? "bg-[#6161D6]" : "",
-            ].join(" ")}
-          >
-            3 мес
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-pressed={preset === "6m"}
-            onClick={() => { setPreset("6m"); setCustomMonth(null); }}
-            className={[
-              "rounded-full text-white bg-[#434377]",
-              "hover:bg-[#6161D6] transition-colors",
-              preset === "6m" ? "bg-[#6161D6]" : "",
-            ].join(" ")}
-          >
-            6 мес
-          </Button>
+        >
+          Этот месяц
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          aria-pressed={preset === "3m"}
+          onClick={() => { setPreset("3m"); setCustomMonth(null); }}
+          className={[
+            "rounded-full text-white bg-[#434377]",
+            "hover:bg-[#6161D6] transition-colors",
+            preset === "3m" ? "bg-[#6161D6]" : "",
+          ].join(" ")}
+        >
+          3 мес
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          aria-pressed={preset === "6m"}
+          onClick={() => { setPreset("6m"); setCustomMonth(null); }}
+          className={[
+            "rounded-full text-white bg-[#434377]",
+            "hover:bg-[#6161D6] transition-colors",
+            preset === "6m" ? "bg-[#6161D6]" : "",
+          ].join(" ")}
+        >
+          6 мес
+        </Button>
         </div>
 
         {/* кастомный месяц — кнопка с popup (не input) */}

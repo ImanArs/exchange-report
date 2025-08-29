@@ -37,6 +37,7 @@ export function NewTransactionForm() {
     register,
     watch,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -88,6 +89,7 @@ export function NewTransactionForm() {
         } as any);
 
         toast.success("Запись сохранена");
+        reset({ usdt: undefined as unknown as number, buyCommission: 0, sellCommission: 0 });
       } catch (e: any) {
         toast.error(e?.message ?? "Ошибка сохранения");
       }
@@ -96,7 +98,7 @@ export function NewTransactionForm() {
   );
 
   return (
-    <div className="w-full border border-[#BEBEBE]/30 rounded-[20px] px-5 py-4 bg-[#434377]/30 text-white flex flex-col gap-4">
+    <div className="w-full border border-[#BEBEBE]/30 rounded-[20px] px-3 sm:px-5 py-3 sm:py-4 bg-[#434377]/30 text-white flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">Новая транзакция</h1>
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
@@ -136,7 +138,7 @@ export function NewTransactionForm() {
             id="buyTotal"
             type="number"
             readOnly
-            value={Number.isFinite(buyTotal) ? buyTotal.toFixed(4) : ""}
+            value={usdt > 0 ? buyTotal.toFixed(4) : ""}
           />
         </div>
 
@@ -161,7 +163,7 @@ export function NewTransactionForm() {
             id="sellTotal"
             type="number"
             readOnly
-            value={Number.isFinite(sellTotal) ? sellTotal.toFixed(4) : ""}
+            value={usdt > 0 ? sellTotal.toFixed(4) : ""}
           />
         </div>
 
