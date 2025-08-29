@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/shared/supabase/client";
-import { Input } from "@/shared/ui/input";
+import { Input, PasswordInput } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
@@ -179,9 +179,8 @@ export default function LoginPage() {
                 <label className="text-sm" htmlFor="password">
                   Пароль
                 </label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -251,9 +250,8 @@ export default function LoginPage() {
                 <label className="text-sm" htmlFor="reg_password">
                   Пароль
                 </label>
-                <Input
+                <PasswordInput
                   id="reg_password"
-                  type="password"
                   placeholder="••••••••"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
@@ -338,9 +336,8 @@ export default function LoginPage() {
                 <label className="text-sm" htmlFor="new_password">
                   Новый пароль
                 </label>
-                <Input
+                <PasswordInput
                   id="new_password"
-                  type="password"
                   placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
